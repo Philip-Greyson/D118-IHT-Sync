@@ -33,6 +33,7 @@ Additionally,the following Python libraries must be installed on the host machin
 
 For customization or use outside of my specific use case at D118, you will want to edit the following variables:
 
+- **If you are running on Windows** - you must change `strftime("%-m/%-d/%Y")` to `strftime("%#m/%#d/%Y")` in the birthday section as Windows does not have the same strftime [codes](https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/strftime-wcsftime-strftime-l-wcsftime-l?view=msvc-170&redirectedfrom=MSDN).
 - peCourseNumbers: An array that contains the "course numbers" (which are really strings as they can contain text) of the classes that should be included.
 - `stuEmail =  str(idNum) +  "@d118.org"` - should be changed to however the student emails are formatted
 - `WHERE schoolid = 5` in multiple SQL queries - This only selects one building in our district, and should be changed if other buildings should be included or at other districts
