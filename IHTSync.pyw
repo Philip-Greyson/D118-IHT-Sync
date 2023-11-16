@@ -56,33 +56,33 @@ if __name__ == '__main__': # main file execution
                         firstName = str(student[1])
                         lastName = str(student[2])
                         internalID = int(student[3]) # get the internal id of the student that is referenced in the classes entries
-                        status = str(student[4]) # active on 0 , inactive 1 or 2, 3 for graduated
+                        status = int(student[4]) # active on 0 , inactive 1 or 2, 3 for graduated
                         stuDCID = str(student[5])
                         gender = str(student[6])
                         grade = int(student[7])
                         birthday = student[8].strftime("%-m/%-d/%Y") # convert datetime object into M/D/YYYY format
-
-                        try:
-                            cur.execute("SELECT course_number, sectionid, teacherid FROM cc WHERE studentid = :studentid AND termid = :term ORDER BY course_number", studentid=internalID, term=termid) # using bind variables as best practice https://python-oracledb.readthedocs.io/en/latest/user_guide/bind.html#bind
-                            courses = cur.fetchall()
-                            for course in courses:
-                                courseNum = str(course[0]) # annoyingly, some course "numbers" are actually text
-                                # print(courseNum, file=log)
-                                if courseNum in peCourseNumbers:
-                                    sectionID = str(course[1])
-                                    teacherID = int(course[2]) # the teacher ID
-                                    # print(f'Course Number: {courseNum} | Section ID {sectionID}', file=log)
-                                    cur.execute("SELECT users.dcid, users.first_name, users.last_name, users.email_addr FROM schoolstaff LEFT JOIN users ON schoolstaff.users_dcid = users.dcid WHERE schoolstaff.id = :staffid", staffid=teacherID)
-                                    teachers = cur.fetchall() # there should really only be one row, so don't bother doing a loop and just take the first result
-                                    staffDCID = int(teachers[0][0])
-                                    staffFirst = str(teachers[0][1])
-                                    staffLast = str(teachers[0][2])
-                                    staffEmail = str(teachers[0][3])
-                                    print(f'Student {idNum} --- Course Number: {courseNum} | Section ID {sectionID} --- Teacher: {staffFirst} {staffLast}, {staffEmail} - {staffDCID}', file=log)
-                                    print(f'{auth},5,{staffDCID},{staffFirst},{staffLast},{staffEmail},{grade},{sectionID},{idNum},{lastName},{firstName},{stuEmail},,{gender},,,{birthday},,', file=outputfile)
-                        except Exception as er:
-                            print(f'ERROR retrieving courses for student {idNum}: {er}')
-                            print(f'ERROR retrieving courses for student {idNum}: {er}', file=log)
+                        if status == 0: #only process the active students, they shouldnt be enrolled anyways but we save some time not querying for their courses
+                            try:
+                                cur.execute("SELECT course_number, sectionid, teacherid FROM cc WHERE studentid = :studentid AND termid = :term ORDER BY course_number", studentid=internalID, term=termid) # using bind variables as best practice https://python-oracledb.readthedocs.io/en/latest/user_guide/bind.html#bind
+                                courses = cur.fetchall()
+                                for course in courses:
+                                    courseNum = str(course[0]) # annoyingly, some course "numbers" are actually text
+                                    # print(courseNum, file=log)
+                                    if courseNum in peCourseNumbers:
+                                        sectionID = str(course[1])
+                                        teacherID = int(course[2]) # the teacher ID
+                                        # print(f'Course Number: {courseNum} | Section ID {sectionID}', file=log)
+                                        cur.execute("SELECT users.dcid, users.first_name, users.last_name, users.email_addr FROM schoolstaff LEFT JOIN users ON schoolstaff.users_dcid = users.dcid WHERE schoolstaff.id = :staffid", staffid=teacherID)
+                                        teachers = cur.fetchall() # there should really only be one row, so don't bother doing a loop and just take the first result
+                                        staffDCID = int(teachers[0][0])
+                                        staffFirst = str(teachers[0][1])
+                                        staffLast = str(teachers[0][2])
+                                        staffEmail = str(teachers[0][3])
+                                        print(f'Student {idNum} --- Course Number: {courseNum} | Section ID {sectionID} --- Teacher: {staffFirst} {staffLast}, {staffEmail} - {staffDCID}', file=log)
+                                        print(f'{auth},5,{staffDCID},{staffFirst},{staffLast},{staffEmail},{grade},{sectionID},{idNum},{lastName},{firstName},{stuEmail},,{gender},,,{birthday},,', file=outputfile)
+                            except Exception as er:
+                                print(f'ERROR retrieving courses for student {idNum}: {er}')
+                                print(f'ERROR retrieving courses for student {idNum}: {er}', file=log)
 
 
                 #after all the files are done writing and now closed, open an ftp connection to the server and place the file on there
