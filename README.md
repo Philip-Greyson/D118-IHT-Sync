@@ -7,7 +7,7 @@ Script to take information about PE classes from PowerSchool, massage it into th
 
 The script first takes the current date and does a query to find all terms from the *terms* table in PowerSchool for the high school, as that is the only building we are interested in. Then each term's start and end dates are compared to today's date to find the term that is currently active.
 Once the term is found, a query is run for all the students at the high school to get their information, which is then processed individually.
-A third query is run for each student, finding enrollments from the *cc* table that match the course numbers array defined in the top of the script. In our case, it is 6 PE classes. If there are courses that match, a final query is performed to retrieve the teacher information for that course. 
+A third query is run for each student, finding enrollments from the *cc* table that match the course numbers array defined in the top of the script. In our case, it is 6 PE classes. If there are courses that match, a final query is performed to retrieve the teacher information for that course.
 Then all the information about the student, course section, and teacher of that section is printed out to a csv file formatted to align with IHT's template, and the file is closed.
 Then a FTPS connection is established to the IHT server, the csv file is re-opened in binary mode and uploaded to the server, and the connection is closed.
 
@@ -23,9 +23,9 @@ The following Environment Variables must be set on the machine running the scrip
 - IHT_SFTP_ADDRESS
 - IHT_AUTH_TOKEN
 
-These are fairly self explanatory, slightly more context is provided in the script comments. 
+These are fairly self explanatory, slightly more context is provided in the script comments.
 
-Additionally,the following Python libraries must be installed on the host machine (links to the installation guide): 
+Additionally,the following Python libraries must be installed on the host machine (links to the installation guide):
 
 - [Python-oracledb](https://python-oracledb.readthedocs.io/en/latest/user_guide/installation.html)
 

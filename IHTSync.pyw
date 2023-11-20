@@ -1,3 +1,6 @@
+# https://github.com/Philip-Greyson/D118-IHT-Sync
+# Script to get student PE course information and send it to IHT via FTPS
+
 # needs oracledb: pip install oracledb --upgrade
 
 # importing module
