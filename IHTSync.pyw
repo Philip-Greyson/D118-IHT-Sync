@@ -12,6 +12,7 @@ Needs oracledb: pip install oracledb --upgrade
 # importing module
 import datetime  # used to get current date for course info
 import os  # needed to get environement variables
+import sys
 from datetime import *
 from ftplib import *  # needed for the ftps upload
 
@@ -46,6 +47,7 @@ if __name__ == '__main__':  # main file execution
                     today = datetime.now()  # get todays date and store it for finding the correct term later
                     # print("today = " + str(today))  # debug
                     # print("today = " + str(today), file=log)  # debug
+                    termid = None
                     cur.execute("SELECT id, firstday, lastday, schoolid, dcid FROM terms WHERE schoolid = 5 AND isyearrec = 0 ORDER BY dcid DESC")  # get a list of terms for the school, filtering to not full years
                     terms = cur.fetchall()
                     for term in terms:  # go through every term
@@ -57,42 +59,48 @@ if __name__ == '__main__':  # main file execution
                             termDCID = str(term[4])
                             print(f'INFO: Found good term: {termid} | {termDCID}')
                             print(f'INFO: Found good term: {termid} | {termDCID}', file=log)
-                    # select all students, only at the high school
-                    cur.execute("SELECT student_number, first_name, last_name, id, enroll_status, dcid, gender, grade_level, dob FROM students WHERE schoolid = 5 ORDER BY student_number DESC")
-                    students = cur.fetchall()
-                    for student in students:
-                        idNum = int(student[0])  # what we would refer to as their "ID Number" aka 6 digit number starting with 22xxxx or 21xxxx
-                        stuEmail = str(idNum) + "@d118.org"  # "create" the email from their ID number
-                        firstName = str(student[1])
-                        lastName = str(student[2])
-                        internalID = int(student[3])  # get the internal id of the student that is referenced in the classes entries
-                        status = int(student[4])  # active on 0 , inactive 1 or 2, 3 for graduated
-                        stuDCID = str(student[5])
-                        gender = str(student[6])
-                        grade = int(student[7])
-                        birthday = student[8].strftime("%-m/%-d/%Y")  # convert datetime object into M/D/YYYY format
-                        if status == 0:  # only process the active students, they shouldnt be enrolled anyways but we save some time not querying for their courses
-                            try:
-                                cur.execute("SELECT course_number, sectionid, teacherid FROM cc WHERE studentid = :studentid AND termid = :term ORDER BY course_number", studentid=internalID, term=termid)  # using bind variables as best practice https://python-oracledb.readthedocs.io/en/latest/user_guide/bind.html#bind
-                                courses = cur.fetchall()
-                                for course in courses:
-                                    courseNum = str(course[0])  # annoyingly, some course "numbers" are actually text
-                                    # print(courseNum, file=log)
-                                    if courseNum in peCourseNumbers:
-                                        sectionID = str(course[1])
-                                        teacherID = int(course[2])  # the teacher ID
-                                        # print(f'Course Number: {courseNum} | Section ID {sectionID}', file=log)
-                                        cur.execute("SELECT users.dcid, users.first_name, users.last_name, users.email_addr FROM schoolstaff LEFT JOIN users ON schoolstaff.users_dcid = users.dcid WHERE schoolstaff.id = :staffid", staffid=teacherID)
-                                        teachers = cur.fetchall()  # there should really only be one row, so don't bother doing a loop and just take the first result
-                                        staffDCID = int(teachers[0][0])
-                                        staffFirst = str(teachers[0][1])
-                                        staffLast = str(teachers[0][2])
-                                        staffEmail = str(teachers[0][3])
-                                        print(f'Student {idNum} --- Course Number: {courseNum} | Section ID {sectionID} --- Teacher: {staffFirst} {staffLast}, {staffEmail} - {staffDCID}', file=log)
-                                        print(f'{auth},5,{staffDCID},{staffFirst},{staffLast},{staffEmail},{grade},{sectionID},{idNum},{lastName},{firstName},{stuEmail},,{gender},,,{birthday},,', file=outputfile)
-                            except Exception as er:
-                                print(f'ERROR retrieving courses for student {idNum}: {er}')
-                                print(f'ERROR retrieving courses for student {idNum}: {er}', file=log)
+                    # check to see if we found a valid term before we continue
+                    if termid:
+                        # select all students, only at the high school
+                        cur.execute("SELECT student_number, first_name, last_name, id, enroll_status, dcid, gender, grade_level, dob FROM students WHERE schoolid = 5 ORDER BY student_number DESC")
+                        students = cur.fetchall()
+                        for student in students:
+                            idNum = int(student[0])  # what we would refer to as their "ID Number" aka 6 digit number starting with 22xxxx or 21xxxx
+                            stuEmail = str(idNum) + "@d118.org"  # "create" the email from their ID number
+                            firstName = str(student[1])
+                            lastName = str(student[2])
+                            internalID = int(student[3])  # get the internal id of the student that is referenced in the classes entries
+                            status = int(student[4])  # active on 0 , inactive 1 or 2, 3 for graduated
+                            stuDCID = str(student[5])
+                            gender = str(student[6])
+                            grade = int(student[7])
+                            birthday = student[8].strftime("%-m/%-d/%Y")  # convert datetime object into M/D/YYYY format
+                            if status == 0:  # only process the active students, they shouldnt be enrolled anyways but we save some time not querying for their courses
+                                try:
+                                    cur.execute("SELECT course_number, sectionid, teacherid FROM cc WHERE studentid = :studentid AND termid = :term ORDER BY course_number", studentid=internalID, term=termid)  # using bind variables as best practice https://python-oracledb.readthedocs.io/en/latest/user_guide/bind.html#bind
+                                    courses = cur.fetchall()
+                                    for course in courses:
+                                        courseNum = str(course[0])  # annoyingly, some course "numbers" are actually text
+                                        # print(courseNum, file=log)
+                                        if courseNum in peCourseNumbers:
+                                            sectionID = str(course[1])
+                                            teacherID = int(course[2])  # the teacher ID
+                                            # print(f'Course Number: {courseNum} | Section ID {sectionID}', file=log)
+                                            cur.execute("SELECT users.dcid, users.first_name, users.last_name, users.email_addr FROM schoolstaff LEFT JOIN users ON schoolstaff.users_dcid = users.dcid WHERE schoolstaff.id = :staffid", staffid=teacherID)
+                                            teachers = cur.fetchall()  # there should really only be one row, so don't bother doing a loop and just take the first result
+                                            staffDCID = int(teachers[0][0])
+                                            staffFirst = str(teachers[0][1])
+                                            staffLast = str(teachers[0][2])
+                                            staffEmail = str(teachers[0][3])
+                                            print(f'Student {idNum} --- Course Number: {courseNum} | Section ID {sectionID} --- Teacher: {staffFirst} {staffLast}, {staffEmail} - {staffDCID}', file=log)
+                                            print(f'{auth},5,{staffDCID},{staffFirst},{staffLast},{staffEmail},{grade},{sectionID},{idNum},{lastName},{firstName},{stuEmail},,{gender},,,{birthday},,', file=outputfile)
+                                except Exception as er:
+                                    print(f'ERROR retrieving courses for student {idNum}: {er}')
+                                    print(f'ERROR retrieving courses for student {idNum}: {er}', file=log)
+                    else:  # if we did not find a valid term, just print out an error
+                        print(f'ERROR: Could not find a valid term for todays date of {today}, ending execution')
+                        print(f'ERROR: Could not find a valid term for todays date of {today}, ending execution', file=log)
+                        sys.exit()
 
 
                 #after all the files are done writing and now closed, open an ftp connection to the server and place the file on there
@@ -125,5 +133,3 @@ if __name__ == '__main__':  # main file execution
                 endTime = endTime.strftime('%H:%M:%S')
                 print(f'INFO: Execution ended at {endTime}')
                 print(f'INFO: Execution ended at {endTime}', file=log)
-
-
