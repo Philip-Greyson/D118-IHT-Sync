@@ -28,7 +28,7 @@ ftpPW = os.environ.get('IHT_SFTP_PASSWORD')  # the password provided by IHT to l
 ftpHOST = os.environ.get('IHT_SFTP_ADDRESS')  # the URL/server IP provided by IHT
 
 auth = os.environ.get('IHT_AUTH_TOKEN')  # unique auth code provided by IHT to uniquely identify our districts files, students, etc
-peCourseNumbers = ['805', '806', '815', '816', '828', '829', '850']  # the course numbers in PowerSchool that should be included in the export. Stored as strings because course numbers can be text in PS. So dumb
+peCourseNumbers = ['805', '806', '813', '814', '815', '816', '828', '829', '850']  # the course numbers in PowerSchool that should be included in the export. Stored as strings because course numbers can be text in PS. So dumb
 
 
 print(f"Username: {un} |Password: {pw} |Server: {cs}")  # debug so we can see where oracle is trying to connect to/with
@@ -74,7 +74,7 @@ if __name__ == '__main__':  # main file execution
                             stuDCID = str(student[5])
                             gender = str(student[6])
                             grade = int(student[7])
-                            birthday = student[8].strftime("%-m/%-d/%Y")  # convert datetime object into M/D/YYYY format
+                            birthday = student[8].strftime("%#m/%#d/%Y")  # convert datetime object into M/D/YYYY format
                             if status == 0:  # only process the active students, they shouldnt be enrolled anyways but we save some time not querying for their courses
                                 try:
                                     cur.execute("SELECT course_number, sectionid, teacherid FROM cc WHERE studentid = :studentid AND termid = :term ORDER BY course_number", studentid=internalID, term=termid)  # using bind variables as best practice https://python-oracledb.readthedocs.io/en/latest/user_guide/bind.html#bind
@@ -92,6 +92,7 @@ if __name__ == '__main__':  # main file execution
                                             staffFirst = str(teachers[0][1])
                                             staffLast = str(teachers[0][2])
                                             staffEmail = str(teachers[0][3])
+                                            print(f'Student {idNum} --- Course Number: {courseNum} | Section ID {sectionID} --- Teacher: {staffFirst} {staffLast}, {staffEmail} - {staffDCID}')
                                             print(f'Student {idNum} --- Course Number: {courseNum} | Section ID {sectionID} --- Teacher: {staffFirst} {staffLast}, {staffEmail} - {staffDCID}', file=log)
                                             print(f'{auth},5,{staffDCID},{staffFirst},{staffLast},{staffEmail},{grade},{sectionID},{idNum},{lastName},{firstName},{stuEmail},,{gender},,,{birthday},,', file=outputfile)
                                 except Exception as er:
