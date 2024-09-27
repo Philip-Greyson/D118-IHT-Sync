@@ -28,7 +28,7 @@ ftpPW = os.environ.get('IHT_SFTP_PASSWORD')  # the password provided by IHT to l
 ftpHOST = os.environ.get('IHT_SFTP_ADDRESS')  # the URL/server IP provided by IHT
 
 auth = os.environ.get('IHT_AUTH_TOKEN')  # unique auth code provided by IHT to uniquely identify our districts files, students, etc
-peCourseNumbers = ['805', '806', '813', '814', '815', '816', '828', '829', '850']  # the course numbers in PowerSchool that should be included in the export. Stored as strings because course numbers can be text in PS. So dumb
+peCourseNumbers = ['800', '803', '804', '805', '806', '813', '814', '815', '816', '828', '829', '850']  # the course numbers in PowerSchool that should be included in the export. Stored as strings because course numbers can be text in PS. So dumb
 
 
 print(f"Username: {un} |Password: {pw} |Server: {cs}")  # debug so we can see where oracle is trying to connect to/with
