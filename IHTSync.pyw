@@ -17,28 +17,31 @@ from datetime import *
 from ftplib import *  # needed for the ftps upload
 
 import oracledb  # used to connect to PowerSchool database
+import pysftp  # used to connect to the IHT SFTP server and upload the file
 
 un = os.environ.get('POWERSCHOOL_READ_USER')  # username for read-only database user
 pw = os.environ.get('POWERSCHOOL_DB_PASSWORD')  # the password for the database account
 cs = os.environ.get('POWERSCHOOL_PROD_DB')  # the IP address, port, and database name to connect to
 
 #set up ftps login info, stored as environment variables on system
-ftpUN = os.environ.get('IHT_SFTP_USERNAME')  # the username provided by IHT to log into the ftps server
-ftpPW = os.environ.get('IHT_SFTP_PASSWORD')  # the password provided by IHT to log in using the username above
-ftpHOST = os.environ.get('IHT_SFTP_ADDRESS')  # the URL/server IP provided by IHT
+SFTP_UN = os.environ.get('IHT_SFTP_USERNAME')  # the username provided by IHT to log into the ftps server
+SFTP_PW = os.environ.get('IHT_SFTP_PASSWORD')  # the password provided by IHT to log in using the username above
+SFTP_HOST = os.environ.get('IHT_SFTP_ADDRESS')  # the URL/server IP provided by IHT
+CNOPTS = pysftp.CnOpts(knownhosts='known_hosts')  # connection options to use the known_hosts file for key validation
 
 auth = os.environ.get('IHT_AUTH_TOKEN')  # unique auth code provided by IHT to uniquely identify our districts files, students, etc
 peCourseNumbers = ['800', '803', '804', '805', '806', '813', '814', '815', '816', '828', '829', '850']  # the course numbers in PowerSchool that should be included in the export. Stored as strings because course numbers can be text in PS. So dumb
 
+OUTPUT_FILENAME = 'iht.csv'  # define the filename for the output file
 
 print(f"Username: {un} |Password: {pw} |Server: {cs}")  # debug so we can see where oracle is trying to connect to/with
-print(f"FTP Username: {ftpUN} |FTP Password: {ftpPW} |FTP Server: {ftpHOST}")  # debug so we can see what FTP info is trying to be used
+print(f"SFTP Username: {SFTP_UN} |SFTP Password: {SFTP_PW} |SFTP Server: {SFTP_HOST}")  # debug so we can see what SFTP info is trying to be used
 
 if __name__ == '__main__':  # main file execution
     with oracledb.connect(user=un, password=pw, dsn=cs) as con:  # create the connecton to the database
         with con.cursor() as cur:  # start an entry cursor
             with open('IHTLog.txt', 'w') as log:
-                with open('iht.csv', 'w') as outputfile:
+                with open(OUTPUT_FILENAME, 'w') as outputfile:
                     startTime = datetime.now()
                     startTime = startTime.strftime('%H:%M:%S')
                     print(f'INFO: Execution started at {startTime}')
@@ -102,33 +105,19 @@ if __name__ == '__main__':  # main file execution
                         print(f'ERROR: Could not find a valid term for todays date of {today}, ending execution')
                         print(f'ERROR: Could not find a valid term for todays date of {today}, ending execution', file=log)
                         sys.exit()
-
-
-                #after all the files are done writing and now closed, open an ftp connection to the server and place the file on there
-                # Uses the ftplib python library, see documentation here: https://docs.python.org/3/library/ftplib.html
+                # upload the file to the IHT server via SFTP
                 try:
-                    ftp = FTP_TLS()  # make an FTP object
-                    ftp.connect(ftpHOST, 990)  # connect to the IHT server
-                    welcome = ftp.getwelcome()
-                    print(f'INFO: Welcome message: {welcome}')  # print the welcome message just to make sure we are actually connected
-                    print(f'INFO: Welcome message: {welcome}', file=log)
-
-                    ftp.login(ftpUN, ftpPW)  # log into the IHT server with the username and password they gave us
-                    ftp.prot_p()  # call for protected transfer after login to avoid error 522 "Data connections must be encrypted"
-
-                    with open('iht.csv','rb') as uploadFile:  # open the output file in read-binary mode in order to upload it to the ftp server via binary upload
-                        print(ftp.pwd())  # debug to print out current directory path
-                        result = ftp.storbinary('STOR iht.csv', uploadFile)  # do the binary upload to the IHT server, store response as result
-                        if result == '226 Transfer complete.':
-                            print('INFO: File successfully uploaded. Closing connection')
-                            print('INFO: File successfully uploaded. Closing connection', file=log)
-                        else:
-                            print(f'ERROR uploading file: {result}')
-                            print(f'ERROR uploading file: {result}', file=log)
-                        ftp.quit()  # close ftp connection
+                    with pysftp.Connection(SFTP_HOST, username=SFTP_UN, password=SFTP_PW, cnopts=CNOPTS, port=880) as sftp:  # creates the sftp connection using the specified port, connection options
+                        print(f'INFO: SFTP connection to {SFTP_HOST} established successfully')
+                        print(f'INFO: SFTP connection to {SFTP_HOST} established successfully', file=log)
+                        print(sftp.pwd) # debug, show what folder we connected to/
+                        print(sftp.listdir())  # debug, show what other files/folders are in the current directory
+                        sftp.put(OUTPUT_FILENAME, confirm=False)  # upload the first file onto the sftp server, confirm false because it gets ingested immediately and that causes its check to fail
+                        print("INFO: Student file placed on remote server")
+                        print("INFO: Student file placed on remote server", file=log)
                 except Exception as er:
-                    print(f'ERROR in FTP process: {er}')
-                    print(f'ERROR in FTP process: {er}',file=log)
+                    print(f'ERROR while connecting via SFTP to {SFTP_HOST} or putting file on server: {er}')
+                    print(f'ERROR while connecting via SFTP to {SFTP_HOST} or putting file on server: {er}', file=log)
 
                 endTime = datetime.now()
                 endTime = endTime.strftime('%H:%M:%S')
