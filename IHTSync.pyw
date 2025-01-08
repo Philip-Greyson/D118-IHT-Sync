@@ -110,8 +110,8 @@ if __name__ == '__main__':  # main file execution
                     with pysftp.Connection(SFTP_HOST, username=SFTP_UN, password=SFTP_PW, cnopts=CNOPTS, port=880) as sftp:  # creates the sftp connection using the specified port, connection options
                         print(f'INFO: SFTP connection to {SFTP_HOST} established successfully')
                         print(f'INFO: SFTP connection to {SFTP_HOST} established successfully', file=log)
-                        print(sftp.pwd) # debug, show what folder we connected to/
-                        print(sftp.listdir())  # debug, show what other files/folders are in the current directory
+                        # print(sftp.pwd) # debug, show what folder we connected to/
+                        # print(sftp.listdir())  # debug, show what other files/folders are in the current directory
                         sftp.put(OUTPUT_FILENAME, confirm=False)  # upload the first file onto the sftp server, confirm false because it gets ingested immediately and that causes its check to fail
                         print("INFO: Student file placed on remote server")
                         print("INFO: Student file placed on remote server", file=log)
