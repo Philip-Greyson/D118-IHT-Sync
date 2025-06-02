@@ -102,8 +102,8 @@ if __name__ == '__main__':  # main file execution
                                     print(f'ERROR retrieving courses for student {idNum}: {er}')
                                     print(f'ERROR retrieving courses for student {idNum}: {er}', file=log)
                     else:  # if we did not find a valid term, just print out an error
-                        print(f'ERROR: Could not find a valid term for todays date of {today}, ending execution')
-                        print(f'ERROR: Could not find a valid term for todays date of {today}, ending execution', file=log)
+                        print(f'WARN: Could not find a valid term for todays date of {today}, ending execution')
+                        print(f'WARN: Could not find a valid term for todays date of {today}, ending execution', file=log)
                         sys.exit()
                 # upload the file to the IHT server via SFTP
                 try:
